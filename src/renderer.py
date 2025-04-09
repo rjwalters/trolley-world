@@ -10,6 +10,7 @@ TRACK = "="
 SWITCH_UP = "/"
 SWITCH_DOWN = "\\"
 TROLLEY = "0"
+AGENT = "A"
 
 
 class GameRenderer:
@@ -27,6 +28,7 @@ class GameRenderer:
             SWITCH_UP: 1,  # White (same as track)
             SWITCH_DOWN: 1,  # White (same as track)
             TROLLEY: 2,  # Red
+            AGENT: 3,  # Yellow
         }
 
     def _setup_curses(self):
@@ -35,24 +37,9 @@ class GameRenderer:
         curses.start_color()
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Track
         curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)  # Trolley
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Trolley
 
-    def render_frame(self, game_state: "GameState") -> None:
-        """Render a single frame of the game with the provided game state"""
-        # Clear screen
-        self.stdscr.clear()
-
-        # Draw game grid
-        self._draw_grid(game_state)
-
-        # Draw status information
-        self._draw_status(game_state)
-
-        # Refresh the screen
-        self.stdscr.refresh()
-
-    def _draw_track(
-        self, display_grid: List[List[str]], game_state: "GameState"
-    ) -> None:
+    def _draw_track(self, display_grid: List[List[str]], game_state: GameState) -> None:
         """Draw the track elements on the display grid"""
         height = game_state.height
         width = game_state.width
@@ -75,7 +62,7 @@ class GameRenderer:
         display_grid[switch_y][switch_x] = switch_char
 
     def _draw_trolley(
-        self, display_grid: List[List[str]], game_state: "GameState"
+        self, display_grid: List[List[str]], game_state: GameState
     ) -> None:
         """Draw the trolley on the display grid if it exists"""
         if game_state.trolley_position:
@@ -84,7 +71,16 @@ class GameRenderer:
             if 0 <= y < game_state.height and 0 <= x < game_state.width:
                 display_grid[y][x] = TROLLEY
 
-    def _draw_grid(self, game_state: "GameState") -> None:
+    def _draw_agents(
+        self, display_grid: List[List[str]], game_state: GameState
+    ) -> None:
+        """Draw the agents on the display grid"""
+        for agent in game_state.agents:
+            if agent.alive:
+                x, y = agent.position
+                display_grid[y][x] = AGENT
+
+    def _draw_grid(self, game_state: GameState) -> None:
         """Draw the game grid with all elements"""
         # Create a visual representation of the game state
 
@@ -95,6 +91,7 @@ class GameRenderer:
 
         self._draw_track(display_grid, game_state)
         self._draw_trolley(display_grid, game_state)
+        self._draw_agents(display_grid, game_state)
 
         # Render the display grid
         for y, row in enumerate(display_grid):
@@ -113,7 +110,7 @@ class GameRenderer:
                     # Handle potential out-of-bounds errors which can happen at screen edges
                     pass
 
-    def _draw_status(self, game_state: "GameState") -> None:
+    def _draw_status(self, game_state: GameState) -> None:
         """Draw status information below the game grid"""
         try:
             # Basic game info
@@ -131,13 +128,33 @@ class GameRenderer:
             )
             self.stdscr.addstr(game_state.height + 3, 0, f"Trolley: {trolley_info}")
 
+            # Display agent info
+            alive_agents = sum(1 for agent in game_state.agents if agent.alive)
+            self.stdscr.addstr(
+                game_state.height + 4, 0, f"Agents: {alive_agents} alive"
+            )
+
             # Control instructions
             self.stdscr.addstr(
-                game_state.height + 4, 0, "Controls: 'q' to quit, 's' to toggle switch"
+                game_state.height + 5, 0, "Controls: 'q' to quit, 's' to toggle switch"
             )
         except curses.error:
             # Handle potential out-of-bounds errors
             pass
+
+    def render_frame(self, game_state: GameState) -> None:
+        """Render a single frame of the game with the provided game state"""
+        # Clear screen
+        self.stdscr.clear()
+
+        # Draw game grid
+        self._draw_grid(game_state)
+
+        # Draw status information
+        self._draw_status(game_state)
+
+        # Refresh the screen
+        self.stdscr.refresh()
 
     def get_key(self) -> int:
         """Get a key press from the user (non-blocking)"""

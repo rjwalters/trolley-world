@@ -39,7 +39,7 @@ def main(stdscr: Any) -> None:
         renderer.render_frame(game_state)
 
         # Control update rate
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     # Clean up curses when done
     renderer.cleanup()

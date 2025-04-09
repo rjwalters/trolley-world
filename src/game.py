@@ -3,9 +3,13 @@
 from typing import Tuple, Optional, List
 import random
 
+from agent import Agent
 
 # Number of turns to wait before spawning a new trolley
 TROLLEY_SPAWN_INTERVAL = 100
+
+# Number of agents at start
+DEFAULT_NUMBER_OF_AGENTS = 10
 
 
 class GameState:
@@ -17,6 +21,7 @@ class GameState:
         height: int = 20,
         switch_x: Optional[int] = None,
         switch_y: Optional[int] = None,
+        agents: List[Agent] = [],
     ):
         """Initialize the game state with default dimensions and customizable switch position"""
         self.width: int = width
@@ -28,6 +33,10 @@ class GameState:
         # Start with a trolley on the tracks
         _, switch_y = self.trolley_switch_position
         self.trolley_position: Optional[Tuple[int, int]] = (0, switch_y)
+
+        # add agents in random positions
+        if len(agents) == 0:
+            self.spawn_agents(DEFAULT_NUMBER_OF_AGENTS)
 
     def set_switch_position(self, x: Optional[int], y: Optional[int]) -> None:
         """Set the switch position to the specified coordinates"""
@@ -93,6 +102,10 @@ class GameState:
         # Update existing trolley if present
         self.update_trolley()
 
+        # update the agents
+        for agent in self.agents:
+            agent.update(self)
+
         # If the trolley isn't on screen, check if it's time to spawn a new one
         if self.trolley_position is None and self.turn % TROLLEY_SPAWN_INTERVAL == 0:
             self.spawn_trolley()
@@ -100,11 +113,101 @@ class GameState:
         # Always continue running
         return True
 
+    def is_in_bounds(self, position: Tuple[int, int]) -> bool:
+        """
+        Check if the given position is within the game boundaries
+
+        Args:
+            position: A tuple (x, y) representing the position to check
+
+        Returns:
+            True if the position is within bounds, False otherwise
+        """
+        x, y = position
+        return 0 <= x < self.width and 0 <= y < self.height
+
+    def is_trolley_collision(self, position: Tuple[int, int]) -> bool:
+        """
+        Check if the given position collides with the trolley
+
+        Args:
+            position: A tuple (x, y) representing the position to check
+
+        Returns:
+            True if the position collides with the trolley, False otherwise
+        """
+        if self.trolley_position is None:
+            return False
+
+        return position == self.trolley_position
+
+    def is_on_switch(self, position: Tuple[int, int]) -> bool:
+        """
+        Check if the given position is on the switch
+
+        Args:
+            position: A tuple (x, y) representing the position to check
+
+        Returns:
+            True if the position is on the switch, False otherwise
+        """
+        x, y = position
+        switch_x, switch_y = self.trolley_switch_position
+        return x == switch_x and y == switch_y
+
+    def is_on_track(self, position: Tuple[int, int]) -> bool:
+        """
+        Check if the given position is on any part of the track
+
+        Args:
+            position: A tuple (x, y) representing the position to check
+
+        Returns:
+            True if the position is on a track, False otherwise
+        """
+        x, y = position
+        switch_x, switch_y = self.trolley_switch_position
+
+        # Main track before switch
+        if y == switch_y and x < switch_x:
+            return True
+
+        # Upper branch (after switch)
+        if y == switch_y - 1 and x > switch_x:
+            return True
+
+        # Lower branch (after switch)
+        if y == switch_y + 1 and x > switch_x:
+            return True
+
+        # Switch position
+        if x == switch_x and y == switch_y:
+            return True
+
+        return False
+
+    def spawn_agents(self, num_agents: int) -> None:
+        """
+        Spawn the specified number of agents at random positions
+
+        Args:
+            num_agents: Number of agents to spawn
+        """
+        self.agents = []
+
+        for i in range(num_agents):
+            x = random.randint(0, self.width - 1)
+            y = random.randint(0, self.height - 1)
+            self.agents.append(Agent(x, y, i + 1))
+
     def reset(self) -> None:
         """Reset the game state to initial conditions"""
         self.turn = 0
+
         # Set random switch position
         random_x = random.randint(5, self.width - 5)
         random_y = random.randint(3, self.height - 3)
         self.set_switch_position(random_x, random_y)
+
+        self.spawn_agents(DEFAULT_NUMBER_OF_AGENTS)
         self.spawn_trolley()
