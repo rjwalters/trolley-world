@@ -1,13 +1,13 @@
-<video width="640" height="360" controls>
-  <source src="./path/to/recording.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
 # 🚋 Trolley World
 
 A multi-agent simulation of the classic trolley problem where autonomous agents with different personalities make moral decisions in a dynamic environment.
 
-![Trolley World Simulation](https://i.imgur.com/sample_image.png)
+<p align="middle">
+<video width="640" height="360" controls>
+  <source src="./assets/game.mov" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+</p>
 
 ## About the Project
 
@@ -51,6 +51,7 @@ This simulation expands on this problem by creating a dynamic environment where 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/trolley-world.git
    cd trolley-world
@@ -163,6 +164,7 @@ class MyCustomStrategy(AgentStrategy):
 ### Agent Actions
 
 Agents can perform the following actions:
+
 - **Movement**: Up, down, left, right
 - **Wait**: Do nothing for a turn
 - **Toggle Switch**: Change the trolley track direction
@@ -194,4 +196,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

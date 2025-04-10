@@ -1,4 +1,4 @@
-.PHONY: clean run analyze train all
+.PHONY: clean run analyze train all watch
 
 clean:
 	rm -rf game_data/* && rm -rf analysis/*
@@ -11,6 +11,9 @@ analyze:
 
 train: 
 	python src/train_agent_model.py
+
+watch:
+	python src/main.py -i
 
 all:
 	$(MAKE) clean

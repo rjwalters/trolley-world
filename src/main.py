@@ -46,7 +46,7 @@ def main(stdscr: Any, args: argparse.Namespace) -> None:
         # draw initial world state
         if rendering or interactive_mode:
             renderer.render_frame(game_state)
-            time.sleep(0.01)
+            time.sleep(0.05)
 
         rendering = False
 
