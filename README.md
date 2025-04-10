@@ -2,12 +2,11 @@
 
 A multi-agent simulation of the classic trolley problem where autonomous agents with different personalities make moral decisions in a dynamic environment.
 
-<p align="middle">
-<video width="640" height="360" controls>
-  <source src="./assets/game.mov" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/80584e2f-6afc-4bda-a323-6bbbdec81367" alt="Trolley World Simulation">
 </p>
+
+_Terminal-based simulation showing agents navigating tracks, avoiding trolleys, and making moral decisions_
 
 ## About the Project
 
