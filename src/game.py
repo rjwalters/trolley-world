@@ -2,14 +2,20 @@
 
 from typing import Tuple, Optional, List
 import random
+import numpy as np
 
-from agent import Agent
+from agent import Agent, find_intersections
+from strategy import AgentStrategy
+from strategies.heuristic_strategy import HeuristicStrategy
 
 # Number of turns to wait before spawning a new trolley
 TROLLEY_SPAWN_INTERVAL = 100
 
 # Number of agents at start
 DEFAULT_NUMBER_OF_AGENTS = 10
+
+# Number of turns to play with only one agent before ending the game
+SINGLE_AGENT_GAME_END = 100
 
 
 class GameState:
@@ -35,8 +41,21 @@ class GameState:
         self.trolley_position: Optional[Tuple[int, int]] = (0, switch_y)
 
         # add agents in random positions
+        self.agents = []
         if len(agents) == 0:
             self.spawn_agents(DEFAULT_NUMBER_OF_AGENTS)
+        else:
+            self.agents = agents
+
+        # Initialize affinity matrix
+        num_agents = len(self.agents)
+        self.affinity_matrix = np.zeros((num_agents, num_agents), dtype=int)
+
+        self.food_positions: List[Tuple[int, int]] = []
+        self.food_energy_value = 100
+        self.spawn_food(bottom=False)
+
+        self.turns_with_one_agent = 0
 
     def set_switch_position(self, x: Optional[int], y: Optional[int]) -> None:
         """Set the switch position to the specified coordinates"""
@@ -102,13 +121,39 @@ class GameState:
         # Update existing trolley if present
         self.update_trolley()
 
+        # Check if we need to spawn new food
+        if not self.food_positions:
+            # Alternate between top and bottom
+            spawn_at_bottom = (
+                self.turn % (TROLLEY_SPAWN_INTERVAL * 2) >= TROLLEY_SPAWN_INTERVAL
+            )
+            self.spawn_food(bottom=spawn_at_bottom)
+
+        # affinity decays over time
+        self.affinity_matrix -= 1
+
         # update the agents
         for agent in self.agents:
             agent.update(self)
+            if agent.alive:
+                # update this agents score based on how popular it is
+                affinity_sum = np.sum(self.affinity_matrix[agent.id, :])
+                agent.score += affinity_sum
 
         # If the trolley isn't on screen, check if it's time to spawn a new one
         if self.trolley_position is None and self.turn % TROLLEY_SPAWN_INTERVAL == 0:
             self.spawn_trolley()
+
+        living_agents = [agent for agent in self.agents if agent.alive]
+
+        if len(living_agents) == 0:
+            return False
+
+        if len(living_agents) == 1:
+            self.turns_with_one_agent += 1
+
+            if self.turns_with_one_agent > SINGLE_AGENT_GAME_END:
+                return False
 
         # Always continue running
         return True
@@ -186,6 +231,30 @@ class GameState:
 
         return False
 
+    def consume_all_food(self, position: Tuple[int, int]) -> int:
+        """
+        Check if the given position is on top of food and consume it
+
+        Args:
+            position: A tuple (x, y) representing the position to check
+
+        Returns:
+            int: the energy change from eating all food at this position (0 if no food)
+        """
+        _x, y = position
+
+        # Quick check: food only spawns on top (y=0) or bottom (y=height-1) rows
+        if y != 0 and y != self.height - 1:
+            return 0
+
+        # Now that we know the position is on a food-spawning row, check if food exists there
+        if position in self.food_positions:
+            # Remove food from the list
+            self.food_positions.remove(position)
+            return self.food_energy_value
+
+        return 0
+
     def spawn_agents(self, num_agents: int) -> None:
         """
         Spawn the specified number of agents at random positions
@@ -198,7 +267,40 @@ class GameState:
         for i in range(num_agents):
             x = random.randint(0, self.width - 1)
             y = random.randint(0, self.height - 1)
-            self.agents.append(Agent(x, y, i + 1))
+            # Select a strategy based on the distribution
+
+            strategy = HeuristicStrategy(
+                altruism=random.uniform(0.1, 0.9),
+                risk_aversion=random.uniform(0.1, 0.9),
+                aggression=random.uniform(0.1, 0.9),
+            )
+
+            # Create the agent with the selected strategy
+            self.agents.append(Agent(x, y, i, strategy))
+
+    def spawn_food(self, bottom: bool = False) -> None:
+        """
+        Spawn food at either the top or bottom edge.
+        Args:
+            bottom: If True, spawn at bottom edge; otherwise at top edge.
+        """
+        # Clear existing food
+        self.food_positions = []
+
+        # Determine y-coordinate based on spawn location
+        y = self.height - 1 if bottom else 0
+
+        # Count living agents
+        num_living_agents = sum(1 for agent in self.agents if agent.alive)
+
+        # Generate random x positions (at most num_living_agents - 1 food items)
+        if num_living_agents > 1:
+            food_count = num_living_agents - 1
+            x_positions = random.sample(range(self.width), min(food_count, self.width))
+
+            # Create and add new food items
+            for x in x_positions:
+                self.food_positions.append((x, y))
 
     def reset(self) -> None:
         """Reset the game state to initial conditions"""
@@ -209,5 +311,16 @@ class GameState:
         random_y = random.randint(3, self.height - 3)
         self.set_switch_position(random_x, random_y)
 
+        # Reset agents
         self.spawn_agents(DEFAULT_NUMBER_OF_AGENTS)
+
+        # Reinitialize affinity matrix
+        num_agents = len(self.agents)
+        self.affinity_matrix = np.zeros((num_agents, num_agents), dtype=int)
+
+        # Reset and spawn trolley
         self.spawn_trolley()
+
+        # Reset and spawn food
+        self.food_positions = []
+        self.spawn_food(bottom=False)

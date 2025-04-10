@@ -11,6 +11,8 @@ SWITCH_UP = "/"
 SWITCH_DOWN = "\\"
 TROLLEY = "0"
 AGENT = "A"
+FOOD = "*"
+TIED_AGENT = "T"
 
 
 class GameRenderer:
@@ -29,6 +31,8 @@ class GameRenderer:
             SWITCH_DOWN: 1,  # White (same as track)
             TROLLEY: 2,  # Red
             AGENT: 3,  # Yellow
+            FOOD: 4,  # Green
+            TIED_AGENT: 5,  # Magenta (tied agent)
         }
 
     def _setup_curses(self):
@@ -37,11 +41,12 @@ class GameRenderer:
         curses.start_color()
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Track
         curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)  # Trolley
-        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Trolley
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Agent
+        curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Food
+        curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)  # Tied agent
 
     def _draw_track(self, display_grid: List[List[str]], game_state: GameState) -> None:
         """Draw the track elements on the display grid"""
-        height = game_state.height
         width = game_state.width
         switch_x, switch_y = game_state.trolley_switch_position
 
@@ -78,7 +83,15 @@ class GameRenderer:
         for agent in game_state.agents:
             if agent.alive:
                 x, y = agent.position
-                display_grid[y][x] = AGENT
+                agent_char = TIED_AGENT if agent.is_tied_to_tracks else AGENT
+                display_grid[y][x] = agent_char
+
+    # Updated _draw_food method to use food_positions
+    def _draw_food(self, display_grid: List[List[str]], game_state: GameState) -> None:
+        """Draw the food on the display grid"""
+        for x, y in game_state.food_positions:
+            if 0 <= y < game_state.height and 0 <= x < game_state.width:
+                display_grid[y][x] = FOOD
 
     def _draw_grid(self, game_state: GameState) -> None:
         """Draw the game grid with all elements"""
@@ -92,6 +105,7 @@ class GameRenderer:
         self._draw_track(display_grid, game_state)
         self._draw_trolley(display_grid, game_state)
         self._draw_agents(display_grid, game_state)
+        self._draw_food(display_grid, game_state)
 
         # Render the display grid
         for y, row in enumerate(display_grid):
@@ -129,10 +143,8 @@ class GameRenderer:
             self.stdscr.addstr(game_state.height + 3, 0, f"Trolley: {trolley_info}")
 
             # Display agent info
-            alive_agents = sum(1 for agent in game_state.agents if agent.alive)
-            self.stdscr.addstr(
-                game_state.height + 4, 0, f"Agents: {alive_agents} alive"
-            )
+            scores = [agent.score for agent in game_state.agents if agent.alive]
+            self.stdscr.addstr(game_state.height + 4, 0, f"Scores: {scores}")
 
             # Control instructions
             self.stdscr.addstr(

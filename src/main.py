@@ -17,7 +17,7 @@ def main(stdscr: Any) -> None:
     """
     # Initialize renderer and game state
     renderer = initialize_renderer()
-    game_state = GameState()
+    game_state = GameState(16, 16)
 
     # Game loop
     running = True
