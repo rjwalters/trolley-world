@@ -106,14 +106,13 @@ class HeuristicStrategy(AgentStrategy):
                 return Action.GIFT_ENERGY
 
             # If we're on tracks and have an enemy, consider tying them
-            if game_state.is_on_track(agent.position):
-                enemies = [
-                    a
-                    for a in other_agents
-                    if game_state.affinity_matrix[a.id, agent.id] < -100
-                ]
-                if enemies and agent.energy > 150 and random.random() < self.aggression:
-                    return Action.TIE_TO_TRACKS
+            enemies = [
+                a
+                for a in other_agents
+                if game_state.affinity_matrix[a.id, agent.id] < -100
+            ]
+            if enemies and agent.energy > 150 and random.random() < self.aggression:
+                return Action.TIE_TO_TRACKS
 
         # Priority 4: Control the switch when strategically valuable
         if game_state.is_on_switch(agent.position):
@@ -166,23 +165,9 @@ class HeuristicStrategy(AgentStrategy):
                     return Action.CHANGE_SWITCH_STATE  # Switch to lower branch
 
         # Priority 5: Explore the environment - move around intelligently
-        if random.random() > 0.7:  # Sometimes move randomly
-            return random.choice(
-                [Action.MOVE_UP, Action.MOVE_DOWN, Action.MOVE_LEFT, Action.MOVE_RIGHT]
-            )
-
-        # Move toward the center of the map
-        if x < game_state.width // 2:
-            return Action.MOVE_RIGHT
-        elif x > game_state.width // 2:
-            return Action.MOVE_LEFT
-        elif y < game_state.height // 2:
-            return Action.MOVE_DOWN
-        elif y > game_state.height // 2:
-            return Action.MOVE_UP
-
-        # If all else fails, just wait
-        return Action.WAIT
+        return random.choice(
+            [Action.MOVE_UP, Action.MOVE_DOWN, Action.MOVE_LEFT, Action.MOVE_RIGHT]
+        )
 
     def __str__(self) -> str:
         """Return a descriptive string of this strategy with personality traits"""

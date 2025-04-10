@@ -124,36 +124,6 @@ class GameRenderer:
                     # Handle potential out-of-bounds errors which can happen at screen edges
                     pass
 
-    def _draw_status(self, game_state: GameState) -> None:
-        """Draw status information below the game grid"""
-        try:
-            # Basic game info
-            self.stdscr.addstr(game_state.height + 1, 0, f"Turn: {game_state.turn}")
-
-            # Display switch state
-            switch_state = "UP" if game_state.trolley_switch_state else "DOWN"
-            self.stdscr.addstr(game_state.height + 2, 0, f"Switch: {switch_state}")
-
-            # Display trolley info
-            trolley_info = (
-                "Not on screen"
-                if game_state.trolley_position is None
-                else f"at {game_state.trolley_position}"
-            )
-            self.stdscr.addstr(game_state.height + 3, 0, f"Trolley: {trolley_info}")
-
-            # Display agent info
-            scores = [agent.score for agent in game_state.agents if agent.alive]
-            self.stdscr.addstr(game_state.height + 4, 0, f"Scores: {scores}")
-
-            # Control instructions
-            self.stdscr.addstr(
-                game_state.height + 5, 0, "Controls: 'q' to quit, 's' to toggle switch"
-            )
-        except curses.error:
-            # Handle potential out-of-bounds errors
-            pass
-
     def render_frame(self, game_state: GameState) -> None:
         """Render a single frame of the game with the provided game state"""
         # Clear screen
@@ -161,9 +131,6 @@ class GameRenderer:
 
         # Draw game grid
         self._draw_grid(game_state)
-
-        # Draw status information
-        self._draw_status(game_state)
 
         # Refresh the screen
         self.stdscr.refresh()

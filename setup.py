@@ -6,7 +6,15 @@ setup(
     version="0.1.0",
     package_dir={"": "src"},  # Tell setuptools packages are under src/
     packages=find_packages(where="src"),  # List packages under src/
-    install_requires=["matplotlib", "numpy", "stumpy"],
+    install_requires=[
+        "matplotlib",
+        "numpy",
+        "stumpy",
+        "pandas",
+        "joblib",
+        "scikit-learn",
+        "argparse",
+    ],
     extras_require={
         "dev": ["pytest", "black", "flake8", "setuptools", "pylance", "mypy"],
     },

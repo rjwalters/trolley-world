@@ -86,4 +86,6 @@ instance/
 .webassets-cache
 
 # Project specific
-# Add custom entries here
+game_data/
+analysis/
+models/

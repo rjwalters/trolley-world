@@ -120,26 +120,36 @@ class Agent:
                 self.energy -= 10
 
                 # Improve affinity between agents
-                game_state.affinity_matrix[self.id, target_agent.id] += 500
                 game_state.affinity_matrix[target_agent.id, self.id] += 500
 
                 # Record action
                 self.action_history.append(action)
                 return
 
-            elif action == Action.TIE_TO_TRACKS and other_agents:
+            elif action == Action.TIE_TO_TRACKS and other_agents and self.energy > 100:
                 # Find the weakest agent on our square
                 target_agent = min(other_agents, key=lambda a: a.energy)
 
-                if self.energy > target_agent.energy and game_state.is_on_track(
-                    self.position
-                ):
+                if self.energy > target_agent.energy:
+                    # Get our current position
+                    current_x, current_y = self.position
+                    switch_x, switch_y = game_state.trolley_switch_position
+
+                    # send to main track before switch
+                    if current_x <= switch_x:
+                        nearest_track_y = switch_y
+                    else:
+                        above_switch = (current_y - switch_y) < 0
+                        if above_switch:
+                            nearest_track_y = switch_y - 1
+                        else:
+                            nearest_track_y = switch_y + 1
                     # Tie agent to tracks!
+                    target_agent.position = (current_x, nearest_track_y)
                     target_agent.is_tied_to_tracks = True
                     # Cost energy to tie someone
-                    self.energy -= 10
+                    self.energy -= 50
                     # Decrease affinity between these agents
-                    game_state.affinity_matrix[self.id, target_agent.id] = -1000
                     game_state.affinity_matrix[target_agent.id, self.id] = -1000
                     # Record action
                     self.action_history.append(action)
@@ -157,8 +167,6 @@ class Agent:
                     )
 
                     target_agent.is_tied_to_tracks = False
-                    # Get a big affinity boost for saving someone
-                    game_state.affinity_matrix[self.id, target_agent.id] += 1000
                     game_state.affinity_matrix[target_agent.id, self.id] += 1000
                     # Record action
                     self.action_history.append(action)
